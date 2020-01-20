@@ -27,17 +27,18 @@ import re
 
 class SRT:
     '''A class that behaves like a file object and writes an SRT file'''
-    def __init__(self, pathOrFile):
+    def __init__(self, pathOrFile, timeOffset=0):
         if isinstance(pathOrFile, file):
             self.file = pathOrFile
         else:
             self.file = open(pathOrFile, 'wb')
         self.counter = 1
+        self.timeOffset = timeOffset
         self.file.write(codecs.BOM_UTF8)
 
     def _formatTime(self, timestamp):
         return "%02u:%02u:%02u,%03u" % (
-            timestamp / 3600,
+            (timestamp / 3600) - self.timeOffset,
             (timestamp / 60) % 60,
             timestamp % 60,
             (timestamp * 1000) % 1000
@@ -617,6 +618,7 @@ if __name__ == '__main__':
                             help="Set input file format as STL (default)")
     parser.add_option("-t", "--tt", dest="reader_class", action="store_const", const=TT,
                             help="Set input file format as TT, handles both the EBU and SMPTE variants")
+    parser.add_option("-o", "--offset", dest="time_offset", type="float", default=0, help="Set an offset in hours to use for timestamps")
 
     (options, args) = parser.parse_args()
 
@@ -627,7 +629,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=options.debug_level)
 
     input = options.reader_class(args[0], options.rich_formatting)
-    c = SRT(args[1])
+    c = SRT(args[1], options.time_offset)
     for sub in input:
         (tci, tco, txt) = sub
         c.write(tci, tco, txt)
